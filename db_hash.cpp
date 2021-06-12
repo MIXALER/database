@@ -1,13 +1,12 @@
 #include <limits>
 #include <vector>
 #include <iostream>
-#include <fstream>
 
 using namespace std;
 
 int hashval = 2;
 int R = 0;
-int N = 2;
+int N = 0;
 const float threshold = 0.75;
 const int num_entries = 256;
 
@@ -74,6 +73,24 @@ int search(int val)
     return x;
 }
 
+bool count(int val)
+{
+    int bucket_num = search(val);
+    Bucket *curr = hashtable[bucket_num];
+    while (curr)
+    {
+        for (int i = 0; i < num_entries; i++)
+        {
+            if (curr->entries[i] == val)
+            {
+                return true;
+            }
+        }
+        curr = curr->overflow;
+    }
+    return false;
+}
+
 void insert_val(int bucket_num, int val)
 {
     Bucket *curr = hashtable[bucket_num];
@@ -100,6 +117,26 @@ void insert_val(int bucket_num, int val)
     }
     return;
 }
+
+bool del(int val)
+{
+    int bucket_num = search(val);
+    Bucket *curr = hashtable[bucket_num];
+    while (curr)
+    {
+        for (int i = 0; i < num_entries; i++)
+        {
+            if (curr->entries[i] == val)
+            {
+                curr->entries[i] = INT32_MIN;
+                return true;
+            }
+        }
+        curr = curr->overflow;
+    }
+    return false;
+}
+
 
 void split_bucket()
 {
@@ -135,11 +172,13 @@ void insert(int val)
         for (int i = 0; i < num_entries; i++)
         {
             if (curr->entries[i] == val)
+            {
+                cout << "表中已经存在该 key 值，重复插入！" << endl;
                 return;
+            }
         }
         curr = curr->overflow;
     }
-    cout << val << endl;
     insert_val(bucket_num, val);
     R++;
     float fr = (float) R / (float) (N * num_entries);
@@ -147,29 +186,69 @@ void insert(int val)
         split_bucket();
 }
 
-int main(int argc, char const *argv[])
+void printMenu()
 {
-    if (argc < 2)
-    {
-        cout << "Please provide filename\nUsage: ./a.out filename" << endl;
-        return 0;
-    }
+    cout << endl;
+    cout << "1:插入数据;" << endl;
+    cout << "2:查询数据;" << endl;
+    cout << "3:删除数据;" << endl;
+    cout << "4:打印哈希表;" << endl;
+    cout << "0:退出" << endl;
+}
 
+int main()
+{
     for (int i = 0; i < 2; i++)
     {
         Bucket *temp = create_bucket();
         hashtable.push_back(temp);
     }
-    string filename = argv[1];
-    ifstream file(filename);
-    string command;
-    while (getline(file, command))
+    cout << "初始化哈希表，表长度为 " << hashval << " 默认桶大小为 " << num_entries << " 默认分裂阈值为 " << threshold << endl;
+    printMenu();
+    int cmd;
+    int key;
+    bool res;
+    while (cin >> cmd)
     {
-        if (command.size() > 0)
+        switch (cmd)
         {
-            int rec = stoi(command);
-            insert(rec);
+            case 1:
+                cout << "请输入 key 值: ";
+                cin >> key;
+                insert(key);
+                break;
+            case 2:
+                cout << "请输入待查询的 key 值：";
+                cin >> key;
+                res = count(key);
+                if (res)
+                    cout << "在哈希表中";
+                else
+                    cout << "不在哈希表中";
+                break;
+            case 3:
+                cout << "请输入待删除的 key 值：";
+                cin >> key;
+                res = del(key);
+                if (res)
+                {
+                    cout << "删除值： " << key << "成功！";
+                } else
+                {
+                    cout << "错误！ 值：" << key << "不在哈希表中！" << endl;
+                }
+                break;
+            case 4:
+                print();
+                break;
+            case 0:
+                print();
+                return 0;
+            default:
+                cout << "invalid command!" << endl;
+                break;
         }
+        printMenu();
     }
     return 0;
 }
